@@ -14,6 +14,12 @@ Make sure to keep backups of important files.
 [Zotero]: https://www.zotero.org/
 
 
+Example
+-------
+
+![rofi-zotero](https://github.com/hanschen/rofi-zotero/assets/1353015/84de0529-ce81-4509-bcfe-4310a1ce2bb8)
+
+
 Usage
 -----
 
