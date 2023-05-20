@@ -36,6 +36,10 @@ FORMAT_AUTHORS_SINGLE = "{author1}"
 FORMAT_AUTHORS_TWO = "{author1} and {author2}"
 FORMAT_AUTHORS_MULTIPLE = "{author1} et al."
 
+FORMAT_PATH_MAXLEN = 80
+FORMAT_PATH_FULLPATH = False
+FORMAT_PATH_ENDING_FRACTION = 0.5
+
 # Zotero directories and files
 _ZOTERO_STORAGE_DIR = "storage"
 _ZOTERO_SQLITE_FILE = "zotero.sqlite"
@@ -142,6 +146,42 @@ def format_authors(author_list):
         author_string = FORMAT_AUTHORS_MULTIPLE.format(author1=author_list[0])
 
     return author_string
+
+
+def format_path(path, maxlen=80, fullpath=False, ending_fraction=0.5):
+    """Format path to shorten it.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Path to format.
+    maxlen : int, optional
+        Maximum length of formatted path string.
+    fullpath : bool, optional
+        Set to True to return full path rather than just the filename.
+    ending_fraction : float, optional
+        Fraction of string length to use for the ending of the path.
+        Default: 0.5.
+
+    Returns
+    -------
+    str
+        Formatted (shortened) path.
+
+    """
+    if not fullpath:
+        path_str = path.name
+    else:
+        path_str = str(path)
+
+    if len(path_str) <= maxlen:
+        return path_str
+
+    char_end = round(maxlen * ending_fraction) - 1
+    char_start = maxlen - char_end - 1
+
+    formatted_path = path_str[:char_start] + "…" + path_str[-char_end:]
+    return formatted_path
 
 
 def format_item(title, author=None, year=None):
@@ -274,17 +314,18 @@ def main():
         if path_id in paths and str(paths[path_id]) == path:
             continue
 
-        if path_id not in paths:
-            if path.startswith("attachments:"):
-                path = path.replace("attachments:", "", 1)
-                path = base_dir / path
-            elif path.startswith("storage:"):
-                path = path.replace("storage:", "", 1)
-                path = zotero_path / _ZOTERO_STORAGE_DIR / keys[path_id] / path
-            else:
-                path = Path(path)
+        if path.startswith("attachments:"):
+            path = path.replace("attachments:", "", 1)
+            path = base_dir / path
+        elif path.startswith("storage:"):
+            path = path.replace("storage:", "", 1)
+            path = zotero_path / _ZOTERO_STORAGE_DIR / keys[path_id] / path
+        else:
+            path = Path(path)
 
-            paths[path_id] = path
+        if path_id not in paths:
+            paths[path_id] = []
+        paths[path_id].append(path)
 
     item_list_with_ids = []
     for item_id, title in titles.items():
@@ -300,14 +341,35 @@ def main():
                           capture_output=True, text=True,
                           input="\n".join(item_list))
     selected_index = rofi.stdout.strip()
+    if not selected_index:
+        return
 
-    if selected_index:
-        item_id = item_list_with_ids[int(selected_index)][1]
-        file_to_open = paths[item_id]
-        if file_to_open.exists():
-            open_file(viewer, file_to_open)
-        else:
-            show_error(f"Could not find file: {file_to_open}", rofi_args)
+    item_id = item_list_with_ids[int(selected_index)][1]
+    files_to_open = paths[item_id]
+    files_to_open.sort()
+
+    if len(files_to_open) == 1:
+        file_to_open = files_to_open[0]
+    else:
+        format_opts = {
+            'maxlen': FORMAT_PATH_MAXLEN,
+            'fullpath': FORMAT_PATH_FULLPATH,
+            'ending_fraction': FORMAT_PATH_ENDING_FRACTION,
+        }
+        files = [format_path(p, **format_opts) for p in files_to_open]
+        rofi = subprocess.run(["rofi", "-dmenu", "-format", "i"] + rofi_args,
+                                capture_output=True, text=True,
+                                input="\n".join(files))
+        selected_index = rofi.stdout.strip()
+        if not selected_index:
+            return
+
+        file_to_open = files_to_open[int(selected_index)]
+
+    if file_to_open.exists():
+        open_file(viewer, file_to_open)
+    else:
+        show_error(f"Could not find file: {file_to_open}", rofi_args)
 
 
 if __name__ == "__main__":
