@@ -285,6 +285,9 @@ def parse_args():
                         default=DEFAULT_ZOTERO_BASE_DIR,
                         help=(f'Base directory for relative paths in Zotero. '
                               f'Default: "{DEFAULT_ZOTERO_BASE_DIR}"'))
+    parser.add_argument('-l', '--list', action='store_true', default=False,
+                        help=('Print out list of results instead of passing '
+                              'it to Rofi'))
     parser.add_argument('--rofi-args', type=str,
                         default=DEFAULT_ROFI_ARGS,
                         help=(f'Arguments to Rofi, usually given as: '
@@ -311,6 +314,7 @@ def parse_args():
 
 def main(zotero_path=DEFAULT_ZOTERO_PATH,
          zotero_base_dir=DEFAULT_ZOTERO_BASE_DIR,
+         list=False,
          viewer=DEFAULT_VIEWER,
          rofi_args=DEFAULT_ROFI_ARGS,
          prompt_paper=DEFAULT_PROMPT_PAPER,
@@ -325,6 +329,9 @@ def main(zotero_path=DEFAULT_ZOTERO_PATH,
         Base directory for relative paths stored in Zotero (see Preferences ->
         Advanced -> Files and Folders -> Base directory in Zotero).
         Default: "$HOME/papers"
+    list : bool, optional
+        Set to True to print out list of results instead of passing it to Rofi.
+        Default: False.
     viewer : str
         Application to open attachments. Use '%u' to specify the path to the
         file to open. Default: "xdg-open %u"
@@ -407,6 +414,10 @@ def main(zotero_path=DEFAULT_ZOTERO_PATH,
     item_list_with_ids.sort()
     item_list = [item for item, _ in item_list_with_ids]
     items_input = "\n".join(item_list)
+
+    if list:
+        print(items_input)
+        return
 
     # note: rofi seems to prefer the first -p argument, so if -p is given in
     # rofi_args, the latter -p argument should be ignored
