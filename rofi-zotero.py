@@ -9,8 +9,10 @@ Author: Hans Chen (contact@hanschen.org)
 
 """
 
+import argparse
 import os
 import shutil
+import shlex
 import sqlite3
 import subprocess
 import sys
@@ -19,13 +21,15 @@ import tempfile
 from pathlib import Path
 
 
+__version__ = "0.1"
+
+
 DEFAULT_ZOTERO_PATH = Path.home() / "Zotero"
 DEFAULT_ZOTERO_BASE_DIR = Path.home() / "papers"
-DEFAULT_ROFI_EXTRA_FLAGS = [
-    "-i",           # case insensitive
-    "-p", "paper",  # prompt title
-]
+DEFAULT_ROFI_ARGS = "-i"  # case insensitive
 DEFAULT_VIEWER = "xdg-open %u"
+DEFAULT_PROMPT_PAPER = "paper"
+DEFAULT_PROMPT_ATTACHMENT = "attachment"
 
 FORMAT_ITEM = "{author} ({year}) - {title}"
 FORMAT_ITEM_WITHOUT_YEAR = "{author} - {title}"
@@ -265,11 +269,77 @@ def show_error(error_msg, rofi_args=None):
     subprocess.run(["rofi", "-e", error_msg] + rofi_args)
 
 
-def main():
-    zotero_path = DEFAULT_ZOTERO_PATH
-    base_dir = Path(DEFAULT_ZOTERO_BASE_DIR)
-    rofi_args = DEFAULT_ROFI_EXTRA_FLAGS
-    viewer = DEFAULT_VIEWER
+def parse_args():
+    description = "Open Zotero attachments with Rofi"
+    parser = argparse.ArgumentParser(description=description)
+
+    default_viewer_without_percent = DEFAULT_VIEWER.replace("%", "%%")
+
+    parser.add_argument('-v', '--version', action='version',
+                        version=f"%(prog)s {__version__}")
+    parser.add_argument('-p', '--zotero-path', type=Path,
+                        default=DEFAULT_ZOTERO_PATH,
+                        help=(f'Path to Zotero data directory. '
+                              f'Default: "{DEFAULT_ZOTERO_PATH}"'))
+    parser.add_argument('-b', '--zotero-base-dir', type=Path,
+                        default=DEFAULT_ZOTERO_BASE_DIR,
+                        help=(f'Base directory for relative paths in Zotero. '
+                              f'Default: "{DEFAULT_ZOTERO_BASE_DIR}"'))
+    parser.add_argument('--rofi-args', type=str,
+                        default=DEFAULT_ROFI_ARGS,
+                        help=(f'Arguments to Rofi, usually given as: '
+                              f'--rofi-args="-i -t theme '
+                              f'-p title\\ with\\ space". '
+                              f'Default: "{DEFAULT_ROFI_ARGS}"'))
+    parser.add_argument('--viewer', type=str,
+                        default=DEFAULT_VIEWER,
+                        help=(f'Application to open attachments, with "%%u" '
+                              f'to indicate where the path should go. '
+                              f'Default: "{default_viewer_without_percent}"'))
+    parser.add_argument('--prompt-paper', type=str,
+                        default=DEFAULT_PROMPT_PAPER,
+                        help=(f'Prompt title when searching through papers. '
+                              f'Default: "{DEFAULT_PROMPT_PAPER}"'))
+    parser.add_argument('--prompt-attachment', type=str,
+                        default=DEFAULT_PROMPT_ATTACHMENT,
+                        help=(f'Prompt title when searching through '
+                              f'attachments. '
+                              f'Default: "{DEFAULT_PROMPT_ATTACHMENT}"'))
+
+    return parser.parse_args()
+
+
+def main(zotero_path=DEFAULT_ZOTERO_PATH,
+         zotero_base_dir=DEFAULT_ZOTERO_BASE_DIR,
+         viewer=DEFAULT_VIEWER,
+         rofi_args=DEFAULT_ROFI_ARGS,
+         prompt_paper=DEFAULT_PROMPT_PAPER,
+         prompt_attachment=DEFAULT_PROMPT_ATTACHMENT):
+    """Run main program.
+
+    Parameters
+    ----------
+    zotero_path : str or pathlib.Path, optional
+        Path to Zotero data directory. Default: "$HOME/Zotero"
+    zotero_base_dir : str or pathlib.Path, optional
+        Base directory for relative paths stored in Zotero (see Preferences ->
+        Advanced -> Files and Folders -> Base directory in Zotero).
+        Default: "$HOME/papers"
+    viewer : str
+        Application to open attachments. Use '%u' to specify the path to the
+        file to open. Default: "xdg-open %u"
+    rofi_args : str
+        Arguments to pass to Rofi. Default: "-i"
+    prompt_paper: str
+        Prompt title when searching through Zotero items. Default: "paper"
+    prompt_attachment: str
+        Prompt title when searching through attachments for a specific item.
+        Default: "attachment"
+
+    """
+    rofi_args = shlex.split(rofi_args)
+    zotero_path = Path(zotero_path)
+    zotero_base_dir = Path(zotero_base_dir)
 
     # Create a temporary copy of the database to avoid issues with locking
     tmp_dir = Path(tempfile.gettempdir())
@@ -316,7 +386,7 @@ def main():
 
         if path.startswith("attachments:"):
             path = path.replace("attachments:", "", 1)
-            path = base_dir / path
+            path = zotero_base_dir / path
         elif path.startswith("storage:"):
             path = path.replace("storage:", "", 1)
             path = zotero_path / _ZOTERO_STORAGE_DIR / keys[path_id] / path
@@ -336,10 +406,15 @@ def main():
 
     item_list_with_ids.sort()
     item_list = [item for item, _ in item_list_with_ids]
+    items_input = "\n".join(item_list)
 
-    rofi = subprocess.run(["rofi", "-dmenu", "-format", "i"] + rofi_args,
-                          capture_output=True, text=True,
-                          input="\n".join(item_list))
+    # note: rofi seems to prefer the first -p argument, so if -p is given in
+    # rofi_args, the latter -p argument should be ignored
+    rofi_command = (["rofi", "-dmenu", "-format", "i"] + rofi_args +
+                    ["-p", prompt_paper])
+    rofi = subprocess.run(rofi_command, capture_output=True, text=True,
+                          input=items_input)
+
     selected_index = rofi.stdout.strip()
     if not selected_index:
         return
@@ -357,9 +432,12 @@ def main():
             'ending_fraction': FORMAT_PATH_ENDING_FRACTION,
         }
         files = [format_path(p, **format_opts) for p in files_to_open]
-        rofi = subprocess.run(["rofi", "-dmenu", "-format", "i"] + rofi_args,
-                                capture_output=True, text=True,
-                                input="\n".join(files))
+        files_input = "\n".join(files)
+
+        rofi_command = (["rofi", "-dmenu", "-format", "i"] + rofi_args +
+                        ["-p", prompt_attachment])
+        rofi = subprocess.run(rofi_command, capture_output=True, text=True,
+                              input=files_input)
         selected_index = rofi.stdout.strip()
         if not selected_index:
             return
@@ -373,4 +451,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    main(**vars(args))
