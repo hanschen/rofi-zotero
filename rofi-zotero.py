@@ -348,6 +348,16 @@ def main(zotero_path=DEFAULT_ZOTERO_PATH,
     zotero_path = Path(zotero_path)
     zotero_base_dir = Path(zotero_base_dir)
 
+    # Check if Rofi is in PATH early on, as it is also used to show error
+    # messages
+    try:
+        rofi = subprocess.run(["rofi", "-v"])
+    except FileNotFoundError:
+        print("'rofi' command not found, make sure it is installed and "
+              "that it is in PATH",
+              file=sys.stderr)
+        return
+
     if not zotero_path.exists():
         show_error(f"Zotero data directory not found: {zotero_path}\n"
                    f"Use the -p option to specify the path to the data "
