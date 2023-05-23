@@ -348,10 +348,23 @@ def main(zotero_path=DEFAULT_ZOTERO_PATH,
     zotero_path = Path(zotero_path)
     zotero_base_dir = Path(zotero_base_dir)
 
+    if not zotero_path.exists():
+        show_error(f"Zotero data directory not found: {zotero_path}\n"
+                   f"Use the -p option to specify the path to the data "
+                   f"directory")
+        return
+
+    zotero_sqlite_file = zotero_path / _ZOTERO_SQLITE_FILE
+    if not zotero_sqlite_file.exists():
+        show_error(f"Zotero database not found: {zotero_sqlite_file}\n"
+                   f"Use the -p option to specify the path to the Zotero data "
+                   f"directory")
+        return
+
     # Create a temporary copy of the database to avoid issues with locking
     tmp_dir = Path(tempfile.gettempdir())
     database_copy = tmp_dir / _ZOTERO_SQLITE_FILE
-    shutil.copy2(zotero_path / _ZOTERO_SQLITE_FILE, database_copy)
+    shutil.copy2(zotero_sqlite_file, database_copy)
 
     all_authors = get_item_info(database_copy, _QUERY_AUTHORS)
     all_titles = get_item_info(database_copy, _QUERY_TITLES)
