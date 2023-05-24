@@ -71,10 +71,13 @@ There are two similar projects with the same name:
 Here are some notable difference from the abovementioned projects:
 
 - The list of attachments is sorted.
-- It is also possible to open attached links
+- It is possible to open attached links
   (for example, created using [ZotFile]).
-- It is easier to change the format of the list of attachment.
-- An error message is shown if an attachment is not found.
+- This script can also deal with items with multiple attachments.
+- It is easier to change the format of the list of attachments.
+- More flexibility regarding the arguments passed to Rofi.
+- Error message are shown for various situations,
+  for example if an attachment is not found.
 
 
 [MatthijsMars/rofi-zotero]: https://github.com/MatthijsMars/rofi-zotero
