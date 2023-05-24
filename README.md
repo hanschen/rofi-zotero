@@ -24,7 +24,7 @@ Usage
 -----
 
 ```bash
-rofi-zotero.py [-p ZOTERO_PATH] [-b ZOTERO_BASE_DIR] [--rofi-args=ROFI_ARGS]
+rofi-zotero.py [-p ZOTERO_PATH] [-b ZOTERO_BASE_DIR] [--rofi-args="ROFI_ARGS"]
 ```
 
 Examples:
