@@ -242,7 +242,7 @@ def get_item_info(zotero_sqlite_file, query):
     return items
 
 
-def open_file(app, file_path):
+def open_file(app, file_path, only_return_command=False):
     """Attempt to open ``file_path`` using ``app``.
 
     Parameters
@@ -253,12 +253,25 @@ def open_file(app, file_path):
         that the file path is the last argument to the command.
     file_path : str
         Path to file to open.
+    only_return_command : bool
+        If True, only return the command and do not execute it. Default: False.
+
+    Returns
+    -------
+    list
+        Command that was run.
 
     """
-    app_and_args = [arg if arg != "%u" else file_path for arg in app.split()]
-    if "%u" not in app:
-        app_and_args.append(file_path)
-    subprocess.run(app_and_args)
+    app_and_args = shlex.split(app)
+    if "%u" not in app_and_args:
+        app_and_args.append("%u")
+
+    command = [arg if arg != '%u' else file_path for arg in app_and_args]
+
+    if not only_return_command:
+        subprocess.run(command)
+
+    return [str(cmd_part) for cmd_part in command]
 
 
 def show_error(error_msg, rofi_args=None):
@@ -479,7 +492,15 @@ def main(zotero_path=DEFAULT_ZOTERO_PATH,
         file_to_open = files_to_open[int(selected_index)]
 
     if file_to_open.exists():
-        open_file(viewer, file_to_open)
+        try:
+            open_file(viewer, file_to_open)
+        except FileNotFoundError:
+            viewer_command = open_file(viewer, file_to_open,
+                                       only_return_command=True)
+            viewer_command = [str(cmd_part) for cmd_part in viewer_command]
+            viewer_command = " ".join(viewer_command)
+            show_error(f"Could not run command: '{viewer_command}'\n"
+                       f"Make sure the viewer is installed")
     else:
         show_error(f"Could not find file: {file_to_open}", rofi_args)
 
