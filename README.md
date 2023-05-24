@@ -52,10 +52,12 @@ rofi-zotero.py --help
 Configuration
 -------------
 
-The configuration options are currently quite limited.
+To customize the Rofi arguments, for example to specify the theme, use the
+`--rofi-args` command-line argument.
 
-You can change the format of the Rofi list using the `FORMAT` variables in
-`rofi-zotero.py`.
+Some formatting options (how the results appear in Rofi) currently do not have
+corresponding command-line arguments. Instead, you can customize these using
+the `FORMAT` variables at the top of `rofi-zotero.py`.
 
 
 Differences from other projects
