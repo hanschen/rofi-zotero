@@ -27,30 +27,39 @@ Usage
 rofi-zotero.py [-p ZOTERO_PATH] [-b ZOTERO_BASE_DIR] [--rofi-args="ROFI_ARGS"]
 ```
 
-Examples:
+
+### Examples:
+
+Simplest case, just run the script.
 
 ```bash
 rofi-zotero.py
 ```
 
-Simplest case, just run the script.
+If you have specified a different location for the Zotero data directory, use
+the `-p` argument:
 
 ```bash
 rofi-zotero.py -p ~/custom/path/to/Zotero
+```
+
+If you use relative paths for linked file attachments in Zotero, specify the
+base directory using the `-b` argument:
+
+
+```bash
 rofi-zotero.py -b ~/base/dir/for/relative/paths
 ```
 
-For example if you have put the Zotero data directory in a different location,
-or if you use relative paths for linked file attachments.
-
-Note that when using `--rofi-args`, both an equal sign and quotes are usually
-required. Spaces can be included by escaping them with backslash (`\`):
+To pass arguments to Rofi, use `--rofi-args`. Note when using this argument, it
+is usually necessary to include an equal sign and quote, see example below.
+Spaces can be included by escaping them with backslash (`\`):
 
 ```bash
 rofi-zotero.py --rofi-args="-i -theme mytheme -m -1 -p prompt\ with\ space"
 ```
 
-For a full list of options, see
+To get a list of all options, use
 
 ```bash
 rofi-zotero.py --help
