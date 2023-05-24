@@ -30,10 +30,18 @@ rofi-zotero.py [-p ZOTERO_PATH] [-b ZOTERO_BASE_DIR] [--rofi-args="ROFI_ARGS"]
 Examples:
 
 ```bash
-rofi-zotero.py  # use default settings
+rofi-zotero.py
+```
+
+Simplest case, just run the script.
+
+```bash
 rofi-zotero.py -p ~/custom/path/to/Zotero
 rofi-zotero.py -b ~/base/dir/for/relative/paths
 ```
+
+For example if you have put the Zotero data directory in a different location,
+or if you use relative paths for linked file attachments.
 
 Note that when using `--rofi-args`, both an equal sign and quotes are usually
 required. Spaces can be included by escaping them with backslash (`\`):
