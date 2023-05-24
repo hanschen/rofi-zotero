@@ -24,8 +24,30 @@ Usage
 -----
 
 ```bash
-rofi-zotero.py
+rofi-zotero.py [-p ZOTERO_PATH] [-b ZOTERO_BASE_DIR] [--rofi-args=ROFI_ARGS]
 ```
+
+Examples:
+
+```bash
+rofi-zotero.py  # use default settings
+rofi-zotero.py -p ~/custom/path/to/Zotero
+rofi-zotero.py -b ~/base/dir/for/relative/paths
+```
+
+Note that when using `--rofi-args`, both an equal sign and quotes are usually
+required. Spaces can be input by escapting them with backslash (`\`):
+
+```bash
+rofi-zotero.py --rofi-args="-i -theme mytheme -m -1 -p prompt\ with\ space"
+```
+
+For a full list of options, see
+
+```bash
+rofi-zotero.py --help
+```
+
 
 Configuration
 -------------
