@@ -36,7 +36,7 @@ rofi-zotero.py -b ~/base/dir/for/relative/paths
 ```
 
 Note that when using `--rofi-args`, both an equal sign and quotes are usually
-required. Spaces can be input by escapting them with backslash (`\`):
+required. Spaces can be included by escaping them with backslash (`\`):
 
 ```bash
 rofi-zotero.py --rofi-args="-i -theme mytheme -m -1 -p prompt\ with\ space"
