@@ -325,13 +325,9 @@ def parse_args():
     return parser.parse_args()
 
 
-def main(zotero_path=DEFAULT_ZOTERO_PATH,
-         zotero_base_dir=DEFAULT_ZOTERO_BASE_DIR,
-         list=False,
-         viewer=DEFAULT_VIEWER,
-         rofi_args=DEFAULT_ROFI_ARGS,
-         prompt_paper=DEFAULT_PROMPT_PAPER,
-         prompt_attachment=DEFAULT_PROMPT_ATTACHMENT):
+def main(zotero_path=None, zotero_base_dir=None,
+         list=False, viewer="xdg-open %u", rofi_args="-i",
+         prompt_paper="paper", prompt_attachment="attachment"):
     """Run main program.
 
     Parameters
@@ -357,6 +353,12 @@ def main(zotero_path=DEFAULT_ZOTERO_PATH,
         Default: "attachment"
 
     """
+    if zotero_path is None:
+        zotero_path = Path.home() / "Zotero"
+
+    if zotero_base_dir is None:
+        zotero_base_dir = Path.home() / "papers"
+
     rofi_args = shlex.split(rofi_args)
     zotero_path = Path(zotero_path)
     zotero_base_dir = Path(zotero_base_dir)
