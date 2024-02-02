@@ -24,7 +24,7 @@ Usage
 -----
 
 ```bash
-rofi-zotero.py [-p ZOTERO_PATH] [-b ZOTERO_BASE_DIR] [--rofi-args="ROFI_ARGS"]
+rofi-zotero.py [-p ZOTERO_PROFILE] [--rofi-args="ROFI_ARGS"]
 ```
 
 
@@ -36,19 +36,11 @@ Simplest case, just run the script.
 rofi-zotero.py
 ```
 
-If you have specified a different location for the Zotero data directory, use
-the `-p` argument:
+If you have multiple zotero profiles use
+the `-p` argument to specify the profile name:
 
 ```bash
-rofi-zotero.py -p ~/custom/path/to/Zotero
-```
-
-If you use relative paths for linked file attachments in Zotero, specify the
-base directory using the `-b` argument:
-
-
-```bash
-rofi-zotero.py -b ~/base/dir/for/relative/paths
+rofi-zotero.py -p user_01
 ```
 
 To pass arguments to Rofi, use `--rofi-args`. Note when using this argument, it
