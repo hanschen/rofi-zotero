@@ -27,6 +27,8 @@ Usage
 rofi-zotero.py [-p ZOTERO_PROFILE] [--rofi-args="ROFI_ARGS"]
 ```
 
+See `rofi-zotero.py --help` for a full list of options.
+
 
 ### Examples:
 
