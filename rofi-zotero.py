@@ -380,7 +380,7 @@ def parse_args():
         type=str,
         default=None,
         help=(
-            "Name of the Zotero profile to use. " "Default: The default Zotero profile."
+            "name of the Zotero profile to use. " "Default: The default Zotero profile"
         ),
     )
     parser.add_argument(
@@ -388,14 +388,14 @@ def parse_args():
         "--list",
         action="store_true",
         default=False,
-        help=("Print out list of results instead of passing " "it to Rofi"),
+        help=("print out list of results instead of passing " "it to Rofi"),
     )
     parser.add_argument(
         "--rofi-args",
         type=str,
         default=DEFAULT_ROFI_ARGS,
         help=(
-            f"Arguments to Rofi, usually given as: "
+            f"arguments to Rofi, usually given as: "
             f'--rofi-args="-i -t theme -p title\\ with\\ space". '
             f'Default: "{DEFAULT_ROFI_ARGS}"'
         ),
@@ -405,7 +405,7 @@ def parse_args():
         type=str,
         default=DEFAULT_VIEWER,
         help=(
-            f'Application to open attachments, with "%%u" '
+            f'application to open attachments, with "%%u" '
             f"to indicate where the path should go. "
             f'Default: "{default_viewer_without_percent}"'
         ),
@@ -415,7 +415,7 @@ def parse_args():
         type=str,
         default=DEFAULT_PROMPT_PAPER,
         help=(
-            f"Prompt title when searching through papers. "
+            f"prompt title when searching through papers. "
             f'Default: "{DEFAULT_PROMPT_PAPER}"'
         ),
     )
@@ -424,7 +424,7 @@ def parse_args():
         type=str,
         default=DEFAULT_PROMPT_ATTACHMENT,
         help=(
-            f"Prompt title when searching through attachments. "
+            f"prompt title when searching through attachments. "
             f'Default: "{DEFAULT_PROMPT_ATTACHMENT}"'
         ),
     )
@@ -434,7 +434,7 @@ def parse_args():
         type=Path,
         default=DEFAULT_ZOTERO_CONFIG,
         help=(
-            f"Path to Zotero config directory. " f'Default: "{DEFAULT_ZOTERO_CONFIG}"'
+            f"path to Zotero config directory. " f'Default: "{DEFAULT_ZOTERO_CONFIG}"'
         ),
     )
 
