@@ -257,14 +257,14 @@ def get_user_prefs(config_dir, profile=None):
         Default profile is chosen (The default profile is the
         one which is automatically selected on the zotero startup).
         Default: None
-    
+
     Returns
     -------
     pathlib.Path or None
         Path to the preference file of the selected profile with name ``profile``.
         If ``profile`` is None, default profile is is chosen.
         Existence of the Path is not checked, will result in FileNotFoundError
-    
+
     Raises
     ------
         RuntimeError: If ``profile`` is not None but no corresponding profile exists.
@@ -278,13 +278,13 @@ def get_user_prefs(config_dir, profile=None):
     profiles = {k : v for k,v in config.items() if "path" in v.keys()}
     if len(profiles) <= 0:
         raise RuntimeError(f"No profiles fund in {str(config_dir)}.")
-    
+
     if not profile is None:
         for k in profiles.keys():
             if "name" in profiles[k] and profiles[k]["name"] == profile:
                 return config_dir / profiles[k]["path"] / "prefs.js"
         raise RuntimeError(f"No profile with name {profile}")
-            
+
     # if no name is given or name not found fall back to default
     for k in profiles.keys():
         if "default" in profiles[k] and profiles[k]["default"] == '1':
@@ -302,10 +302,10 @@ def get_path_pref(pref_path, preference):
     pref_path : str or pathlib.Path
         File containing user preferences. This file is assumed
         to exist. Raises FileNotFoundError otherwise.
-    
+
     preference : str
         The preference setting, e.g. ``extensions.zotero.dataDir``
-        
+
     Returns
     -------
     pathlib.Path or None
@@ -319,7 +319,7 @@ def get_path_pref(pref_path, preference):
             # of which we extrac the second.
             data_path = re.search(r',.*\"(.*)\"', line)[1]
             data_path = Path(data_path)
-    
+
     return data_path
 
 def open_file(app, file_path, only_return_command=False):
@@ -372,8 +372,8 @@ def parse_args():
                         version=f"%(prog)s {__version__}")
     parser.add_argument('-p', '--zotero-profile', type=str,
                         default=None,
-                        help=(f'Profile name of profile to be chosen.'
-                              f'None to choose default zotero profile.'))
+                        help=('Name of the Zotero profile to use. '
+                        'Default: The default Zotero profile.'))
     parser.add_argument('-l', '--list', action='store_true', default=False,
                         help=('Print out list of results instead of passing '
                               'it to Rofi'))
@@ -405,8 +405,8 @@ def parse_args():
     return parser.parse_args()
 
 
-def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %u", rofi_args="-i",
-         prompt_paper="paper", prompt_attachment="attachment"):
+def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %u",
+         rofi_args="-i", prompt_paper="paper", prompt_attachment="attachment"):
     """Run main program.
 
     Parameters
@@ -476,7 +476,7 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
         zotero_path = DEFAULT_ZOTERO_PATH
     if zotero_base_dir is None:
         zotero_base_dir = DEFAULT_ZOTERO_BASE_DIR
-        
+
     if not zotero_path.exists():
         show_error(f"Zotero data directory not found: {zotero_path}\n"
                    f"Use the -p option to specify the zotero profile.")
