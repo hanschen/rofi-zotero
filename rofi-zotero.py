@@ -12,16 +12,14 @@ Author: Hans Chen (contact@hanschen.org)
 import argparse
 import configparser
 import os
-import shutil
+import re
 import shlex
+import shutil
 import sqlite3
 import subprocess
 import sys
 import tempfile
-import re
-
 from pathlib import Path
-
 
 __version__ = "0.1"
 
@@ -146,8 +144,9 @@ def format_authors(author_list):
     if len(author_list) == 1:
         author_string = FORMAT_AUTHORS_SINGLE.format(author1=author_list[0])
     elif len(author_list) == 2:
-        author_string = FORMAT_AUTHORS_TWO.format(author1=author_list[0],
-                                                  author2=author_list[1])
+        author_string = FORMAT_AUTHORS_TWO.format(
+            author1=author_list[0], author2=author_list[1]
+        )
     else:
         author_string = FORMAT_AUTHORS_MULTIPLE.format(author1=author_list[0])
 
@@ -212,8 +211,7 @@ def format_item(title, author=None, year=None):
     if author and year:
         item_string = FORMAT_ITEM.format(title=title, author=author, year=year)
     elif author:
-        item_string = FORMAT_ITEM_WITHOUT_YEAR.format(title=title,
-                                                      author=author)
+        item_string = FORMAT_ITEM_WITHOUT_YEAR.format(title=title, author=author)
     elif year:
         item_string = FORMAT_ITEM_WITHOUT_AUTHOR.format(title=title, year=year)
     else:
@@ -275,8 +273,8 @@ def get_user_prefs(config_dir, profile=None):
     config_dir = Path(config_dir) / "zotero"
     parser = configparser.ConfigParser()
     parser.read(str(config_dir / "profiles.ini"))
-    config = {s:dict(parser.items(s)) for s in parser.sections()}
-    profiles = {k : v for k,v in config.items() if "path" in v.keys()}
+    config = {s: dict(parser.items(s)) for s in parser.sections()}
+    profiles = {k: v for k, v in config.items() if "path" in v.keys()}
     if len(profiles) <= 0:
         raise RuntimeError(f"No profiles found in {str(config_dir)}.")
 
@@ -288,7 +286,7 @@ def get_user_prefs(config_dir, profile=None):
 
     # If no name is given or name not found fall back to default
     for k in profiles.keys():
-        if "default" in profiles[k] and profiles[k]["default"] == '1':
+        if "default" in profiles[k] and profiles[k]["default"] == "1":
             return config_dir / profiles[k]["path"] / "prefs.js"
 
     # If no default is found, fall back to first element
@@ -320,7 +318,7 @@ def get_path_pref(pref_path, preference):
         if preference in line:
             # each line in pref_path is a function call with two arguments
             # of which we extract the second.
-            data_path = re.search(r',.*\"(.*)\"', line)
+            data_path = re.search(r",.*\"(.*)\"", line)
             if data_path is not None:
                 return Path(data_path[1])
             else:
@@ -351,7 +349,7 @@ def open_file(app, file_path, only_return_command=False):
     if "%u" not in app_and_args:
         app_and_args.append("%u")
 
-    command = [arg if arg != '%u' else file_path for arg in app_and_args]
+    command = [arg if arg != "%u" else file_path for arg in app_and_args]
 
     if not only_return_command:
         subprocess.run(command)
@@ -373,45 +371,85 @@ def parse_args():
 
     default_viewer_without_percent = DEFAULT_VIEWER.replace("%", "%%")
 
-    parser.add_argument('-v', '--version', action='version',
-                        version=f"%(prog)s {__version__}")
-    parser.add_argument('-p', '--zotero-profile', type=str,
-                        default=None,
-                        help=('Name of the Zotero profile to use. '
-                        'Default: The default Zotero profile.'))
-    parser.add_argument('-l', '--list', action='store_true', default=False,
-                        help=('Print out list of results instead of passing '
-                              'it to Rofi'))
-    parser.add_argument('--rofi-args', type=str,
-                        default=DEFAULT_ROFI_ARGS,
-                        help=(f'Arguments to Rofi, usually given as: '
-                              f'--rofi-args="-i -t theme '
-                              f'-p title\\ with\\ space". '
-                              f'Default: "{DEFAULT_ROFI_ARGS}"'))
-    parser.add_argument('--viewer', type=str,
-                        default=DEFAULT_VIEWER,
-                        help=(f'Application to open attachments, with "%%u" '
-                              f'to indicate where the path should go. '
-                              f'Default: "{default_viewer_without_percent}"'))
-    parser.add_argument('--prompt-paper', type=str,
-                        default=DEFAULT_PROMPT_PAPER,
-                        help=(f'Prompt title when searching through papers. '
-                              f'Default: "{DEFAULT_PROMPT_PAPER}"'))
-    parser.add_argument('--prompt-attachment', type=str,
-                        default=DEFAULT_PROMPT_ATTACHMENT,
-                        help=(f'Prompt title when searching through '
-                              f'attachments. '
-                              f'Default: "{DEFAULT_PROMPT_ATTACHMENT}"'))
-    parser.add_argument('-c', '--zotero-config', type=Path,
-                        default=DEFAULT_ZOTERO_CONFIG,
-                        help=(f'Path to Zotero config directory. '
-                              f'Default: "{DEFAULT_ZOTERO_CONFIG}"'))
+    parser.add_argument(
+        "-v", "--version", action="version", version=f"%(prog)s {__version__}"
+    )
+    parser.add_argument(
+        "-p",
+        "--zotero-profile",
+        type=str,
+        default=None,
+        help=(
+            "Name of the Zotero profile to use. " "Default: The default Zotero profile."
+        ),
+    )
+    parser.add_argument(
+        "-l",
+        "--list",
+        action="store_true",
+        default=False,
+        help=("Print out list of results instead of passing " "it to Rofi"),
+    )
+    parser.add_argument(
+        "--rofi-args",
+        type=str,
+        default=DEFAULT_ROFI_ARGS,
+        help=(
+            f"Arguments to Rofi, usually given as: "
+            f'--rofi-args="-i -t theme -p title\\ with\\ space". '
+            f'Default: "{DEFAULT_ROFI_ARGS}"'
+        ),
+    )
+    parser.add_argument(
+        "--viewer",
+        type=str,
+        default=DEFAULT_VIEWER,
+        help=(
+            f'Application to open attachments, with "%%u" '
+            f"to indicate where the path should go. "
+            f'Default: "{default_viewer_without_percent}"'
+        ),
+    )
+    parser.add_argument(
+        "--prompt-paper",
+        type=str,
+        default=DEFAULT_PROMPT_PAPER,
+        help=(
+            f"Prompt title when searching through papers. "
+            f'Default: "{DEFAULT_PROMPT_PAPER}"'
+        ),
+    )
+    parser.add_argument(
+        "--prompt-attachment",
+        type=str,
+        default=DEFAULT_PROMPT_ATTACHMENT,
+        help=(
+            f"Prompt title when searching through attachments. "
+            f'Default: "{DEFAULT_PROMPT_ATTACHMENT}"'
+        ),
+    )
+    parser.add_argument(
+        "-c",
+        "--zotero-config",
+        type=Path,
+        default=DEFAULT_ZOTERO_CONFIG,
+        help=(
+            f"Path to Zotero config directory. " f'Default: "{DEFAULT_ZOTERO_CONFIG}"'
+        ),
+    )
 
     return parser.parse_args()
 
 
-def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %u",
-         rofi_args="-i", prompt_paper="paper", prompt_attachment="attachment"):
+def main(
+    zotero_config=None,
+    zotero_profile=None,
+    list=False,
+    viewer="xdg-open %u",
+    rofi_args="-i",
+    prompt_paper="paper",
+    prompt_attachment="attachment",
+):
     """Run main program.
 
     Parameters
@@ -446,31 +484,38 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
     try:
         rofi = subprocess.run(["rofi", "-v"])
     except FileNotFoundError:
-        print("'rofi' command not found, make sure it is installed and "
-              "that it is in PATH",
-              file=sys.stderr)
+        print(
+            "'rofi' command not found, make sure it is installed and "
+            "that it is in PATH",
+            file=sys.stderr,
+        )
         return
 
     # Compute Zotero paths
     if not zotero_config.exists():
-        show_error(f"Zotero config directory not found {str(zotero_config)}\n"
-                   f"Use the -c option to specify the path to the config directory.")
+        show_error(
+            f"Zotero config directory not found {str(zotero_config)}\n"
+            f"Use the -c option to specify the path to the config directory."
+        )
         return
     try:
         pref_path = get_user_prefs(zotero_config, zotero_profile)
     except RuntimeError as e:
-        show_error(f"{str(e)}\n"
-                   f"Use the -p option to specify the zotero profile.")
+        show_error(f"{str(e)}\n" f"Use the -p option to specify the zotero profile.")
         return
     except FileNotFoundError as e:
-        show_error(f"{str(e)}\n"
-                   f"Use the -c option to specify the path to the conifg directory.")
+        show_error(
+            f"{str(e)}\n"
+            f"Use the -c option to specify the path to the conifg directory."
+        )
         return
 
     # Extract Zotero paths
     if not pref_path.exists() or not pref_path.is_file():
-        show_error(f"Could the find preference file {str(pref_path)}.\n"
-                   f"Use the -c option to specify the path to the config directory.\n")
+        show_error(
+            f"Could the find preference file {str(pref_path)}.\n"
+            f"Use the -c option to specify the path to the config directory.\n"
+        )
         return
 
     zotero_path = get_path_pref(pref_path, "extensions.zotero.dataDir")
@@ -482,14 +527,18 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
         zotero_base_dir = DEFAULT_ZOTERO_BASE_DIR
 
     if not zotero_path.exists():
-        show_error(f"Zotero data directory not found: {zotero_path}\n"
-                   f"Use the -p option to specify the zotero profile.")
+        show_error(
+            f"Zotero data directory not found: {zotero_path}\n"
+            f"Use the -p option to specify the zotero profile."
+        )
         return
 
     zotero_sqlite_file = zotero_path / _ZOTERO_SQLITE_FILE
     if not zotero_sqlite_file.exists():
-        show_error(f"Zotero database not found: {zotero_sqlite_file}\n"
-                   f"Use the -p option to specify the zotero profile.")
+        show_error(
+            f"Zotero database not found: {zotero_sqlite_file}\n"
+            f"Use the -p option to specify the zotero profile."
+        )
         return
 
     # Create a temporary copy of the database to avoid issues with locking
@@ -564,12 +613,12 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
         print(items_input)
         return
 
-    # NOTE: rofi seems to prefer the first -p argument, so if -p is given in
-    # rofi_args, the latter -p argument should be ignored
-    rofi_command = (["rofi", "-dmenu", "-format", "i"] + rofi_args +
-                    ["-p", prompt_paper])
-    rofi = subprocess.run(rofi_command, capture_output=True, text=True,
-                          input=items_input)
+    # NOTE: Rofi seems to prefer the first -p argument, so if -p is given in rofi_args,
+    # the latter -p argument should be ignored
+    rofi_command = ["rofi", "-dmenu", "-format", "i"] + rofi_args + ["-p", prompt_paper]
+    rofi = subprocess.run(
+        rofi_command, capture_output=True, text=True, input=items_input
+    )
 
     selected_index = rofi.stdout.strip()
     if not selected_index:
@@ -583,17 +632,19 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
         file_to_open = files_to_open[0]
     else:
         format_opts = {
-            'maxlen': FORMAT_PATH_MAXLEN,
-            'fullpath': FORMAT_PATH_FULLPATH,
-            'ending_fraction': FORMAT_PATH_ENDING_FRACTION,
+            "maxlen": FORMAT_PATH_MAXLEN,
+            "fullpath": FORMAT_PATH_FULLPATH,
+            "ending_fraction": FORMAT_PATH_ENDING_FRACTION,
         }
         files = [format_path(p, **format_opts) for p in files_to_open]
         files_input = "\n".join(files)
 
-        rofi_command = (["rofi", "-dmenu", "-format", "i"] + rofi_args +
-                        ["-p", prompt_attachment])
-        rofi = subprocess.run(rofi_command, capture_output=True, text=True,
-                              input=files_input)
+        rofi_command = (
+            ["rofi", "-dmenu", "-format", "i"] + rofi_args + ["-p", prompt_attachment]
+        )
+        rofi = subprocess.run(
+            rofi_command, capture_output=True, text=True, input=files_input
+        )
         selected_index = rofi.stdout.strip()
         if not selected_index:
             return
@@ -604,12 +655,13 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
         try:
             open_file(viewer, file_to_open)
         except FileNotFoundError:
-            viewer_command = open_file(viewer, file_to_open,
-                                       only_return_command=True)
+            viewer_command = open_file(viewer, file_to_open, only_return_command=True)
             viewer_command = [str(cmd_part) for cmd_part in viewer_command]
             viewer_command = " ".join(viewer_command)
-            show_error(f"Could not run command: '{viewer_command}'\n"
-                       f"Make sure the viewer is installed")
+            show_error(
+                f"Could not run command: '{viewer_command}'\n"
+                f"Make sure the viewer is installed"
+            )
     else:
         show_error(f"Could not find file: {file_to_open}", rofi_args)
 
