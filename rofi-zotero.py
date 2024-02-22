@@ -252,9 +252,9 @@ def get_user_prefs(config_dir, profile=None):
         read. Usually ``~/.zotero``.
 
     profile : str, optional
-        Name of the profile to be chosen. If None is given, then
-        Default profile is chosen (The default profile is the
-        one which is automatically selected on the zotero startup).
+        Name of the profile to be chosen. If None is given, then the default profile is
+        chosen (the default profile is the one that is automatically selected when
+        Zotero starts).
         Default: None
 
     Returns
@@ -376,7 +376,7 @@ def parse_args():
     )
     parser.add_argument(
         "-p",
-        "--zotero-profile",
+        "--profile",
         type=str,
         default=None,
         help=(
@@ -430,7 +430,7 @@ def parse_args():
     )
     parser.add_argument(
         "-c",
-        "--zotero-config",
+        "--config",
         type=Path,
         default=DEFAULT_ZOTERO_CONFIG,
         help=(
@@ -442,8 +442,8 @@ def parse_args():
 
 
 def main(
-    zotero_config=None,
-    zotero_profile=None,
+    config=None,
+    profile=None,
     list=False,
     viewer="xdg-open %u",
     rofi_args="-i",
@@ -454,29 +454,29 @@ def main(
 
     Parameters
     ----------
-    zotero_config : str or pathlib.Path, optional
+    config : str or pathlib.Path, optional
         Path to Zotero config directory. Default: DEFAULT_ZOTERO_CONFIG
-    zotero_profile : str or pathlib.Path, optional
-        Profile name, None results in default profile. Default None.
+    profile : str, optional
+        Profile name, or None for the default profile. Default: None.
     list : bool, optional
         Set to True to print out list of results instead of passing it to Rofi.
         Default: False.
-    viewer : str
+    viewer : str, optional
         Application to open attachments. Use '%u' to specify the path to the
         file to open. Default: "xdg-open %u"
-    rofi_args : str
+    rofi_args : str, optional
         Arguments to pass to Rofi. Default: "-i"
-    prompt_paper: str
+    prompt_paper: str, optional
         Prompt title when searching through Zotero items. Default: "paper"
-    prompt_attachment: str
+    prompt_attachment: str, optional
         Prompt title when searching through attachments for a specific item.
         Default: "attachment"
 
     """
 
-    if zotero_config is None:
-        zotero_config = DEFAULT_ZOTERO_CONFIG
-    zotero_config = Path(zotero_config)
+    if config is None:
+        config = DEFAULT_ZOTERO_CONFIG
+    config = Path(config)
 
     rofi_args = shlex.split(rofi_args)
 
@@ -492,21 +492,23 @@ def main(
         return
 
     # Compute Zotero paths
-    if not zotero_config.exists():
+    if not config.exists():
         show_error(
-            f"Zotero config directory not found {str(zotero_config)}\n"
-            f"Use the -c option to specify the path to the config directory."
+            f"Zotero config directory not found: {config}\n"
+            f"Use the --config option to specify the path to the config directory."
         )
         return
     try:
-        pref_path = get_user_prefs(zotero_config, zotero_profile)
+        pref_path = get_user_prefs(config, profile)
     except RuntimeError as e:
-        show_error(f"{str(e)}\n" f"Use the -p option to specify the zotero profile.")
+        show_error(
+            f"{str(e)}\n" f"Use the --profile option to specify the Zotero profile."
+        )
         return
     except FileNotFoundError as e:
         show_error(
             f"{str(e)}\n"
-            f"Use the -c option to specify the path to the conifg directory."
+            f"Use the --config option to specify the path to the config directory."
         )
         return
 
