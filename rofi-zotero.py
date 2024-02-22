@@ -243,6 +243,7 @@ def get_item_info(zotero_sqlite_file, query):
     conn.close()
     return items
 
+
 def get_user_prefs(config_dir, profile=None):
     """Get profile preference file in ``config_dir`` directory
 
@@ -268,7 +269,7 @@ def get_user_prefs(config_dir, profile=None):
     Raises
     ------
         RuntimeError: If ``profile`` is not None but no corresponding profile exists.
-        RuntimeError: If not profiles are found in the direcotry.
+        RuntimeError: If no profiles are found in the directory.
     """
 
     config_dir = Path(config_dir) / "zotero"
@@ -277,22 +278,23 @@ def get_user_prefs(config_dir, profile=None):
     config = {s:dict(parser.items(s)) for s in parser.sections()}
     profiles = {k : v for k,v in config.items() if "path" in v.keys()}
     if len(profiles) <= 0:
-        raise RuntimeError(f"No profiles fund in {str(config_dir)}.")
+        raise RuntimeError(f"No profiles found in {str(config_dir)}.")
 
-    if not profile is None:
+    if profile is not None:
         for k in profiles.keys():
             if "name" in profiles[k] and profiles[k]["name"] == profile:
                 return config_dir / profiles[k]["path"] / "prefs.js"
         raise RuntimeError(f"No profile with name {profile}")
 
-    # if no name is given or name not found fall back to default
+    # If no name is given or name not found fall back to default
     for k in profiles.keys():
         if "default" in profiles[k] and profiles[k]["default"] == '1':
             return config_dir / profiles[k]["path"] / "prefs.js"
 
-    # if no default is found, fall back to first elemnt
+    # If no default is found, fall back to first element
     first_key = list(profiles.keys())[0]
     return config_dir / profiles[first_key]["path"] / "prefs.js"
+
 
 def get_path_pref(pref_path, preference):
     """Reads data directory from preference file
@@ -300,27 +302,30 @@ def get_path_pref(pref_path, preference):
     Parameters
     ----------
     pref_path : str or pathlib.Path
-        File containing user preferences. This file is assumed
-        to exist. Raises FileNotFoundError otherwise.
+        File containing user preferences. This file is assumed to exist. Raises
+        FileNotFoundError otherwise.
 
     preference : str
-        The preference setting, e.g. ``extensions.zotero.dataDir``
+        The preference setting, e.g. ``extensions.zotero.dataDir``.
 
     Returns
     -------
     pathlib.Path or None
         Path to the data directory or None if setting is not present.
+
     """
     pref_path = Path(pref_path)
     data_path = None
     for line in pref_path.read_text(encoding="utf-8").splitlines():
         if preference in line:
-            # each line in pref_path is a function call with two arguemnts
-            # of which we extrac the second.
-            data_path = re.search(r',.*\"(.*)\"', line)[1]
-            data_path = Path(data_path)
+            # each line in pref_path is a function call with two arguments
+            # of which we extract the second.
+            data_path = re.search(r',.*\"(.*)\"', line)
+            if data_path is not None:
+                return Path(data_path[1])
+            else:
+                return None
 
-    return data_path
 
 def open_file(app, file_path, only_return_command=False):
     """Attempt to open ``file_path`` using ``app``.
@@ -437,8 +442,7 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
 
     rofi_args = shlex.split(rofi_args)
 
-    # Check if Rofi is in PATH early on, as it is also used to show error
-    # messages
+    # Check if Rofi is in PATH early on, as it is also used to show error messages
     try:
         rofi = subprocess.run(["rofi", "-v"])
     except FileNotFoundError:
@@ -447,7 +451,7 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
               file=sys.stderr)
         return
 
-    # compute zotero paths
+    # Compute Zotero paths
     if not zotero_config.exists():
         show_error(f"Zotero config directory not found {str(zotero_config)}\n"
                    f"Use the -c option to specify the path to the config directory.")
@@ -463,7 +467,7 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
                    f"Use the -c option to specify the path to the conifg directory.")
         return
 
-    # extract zotero paths
+    # Extract Zotero paths
     if not pref_path.exists() or not pref_path.is_file():
         show_error(f"Could the find preference file {str(pref_path)}.\n"
                    f"Use the -c option to specify the path to the config directory.\n")
@@ -500,10 +504,10 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
 
     os.remove(database_copy)
 
+    authors = {}
     author_list = []
     if len(all_authors) > 0:
         id = all_authors[0][0]
-        authors = {}
         for author_id, author in all_authors:
             if author_id != id:
                 authors[id] = format_authors(author_list)
@@ -560,7 +564,7 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
         print(items_input)
         return
 
-    # note: rofi seems to prefer the first -p argument, so if -p is given in
+    # NOTE: rofi seems to prefer the first -p argument, so if -p is given in
     # rofi_args, the latter -p argument should be ignored
     rofi_command = (["rofi", "-dmenu", "-format", "i"] + rofi_args +
                     ["-p", prompt_paper])
