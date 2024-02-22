@@ -431,6 +431,8 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
 
     """
 
+    if zotero_config is None:
+        zotero_config = DEFAULT_ZOTERO_CONFIG
     zotero_config = Path(zotero_config)
 
     rofi_args = shlex.split(rofi_args)
@@ -446,8 +448,6 @@ def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %
         return
 
     # compute zotero paths
-    if zotero_config is None:
-        zotero_config = DEFAULT_ZOTERO_CONFIG
     if not zotero_config.exists():
         show_error(f"Zotero config directory not found {str(zotero_config)}\n"
                    f"Use the -c option to specify the path to the config directory.")
