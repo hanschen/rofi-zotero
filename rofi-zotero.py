@@ -10,6 +10,7 @@ Author: Hans Chen (contact@hanschen.org)
 """
 
 import argparse
+import configparser
 import os
 import shutil
 import shlex
@@ -17,13 +18,14 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import re
 
 from pathlib import Path
 
 
 __version__ = "0.1"
 
-
+DEFAULT_ZOTERO_CONFIG = Path.home() / ".zotero"
 DEFAULT_ZOTERO_PATH = Path.home() / "Zotero"
 DEFAULT_ZOTERO_BASE_DIR = Path.home() / "papers"
 DEFAULT_ROFI_ARGS = "-i"  # case insensitive
@@ -241,6 +243,84 @@ def get_item_info(zotero_sqlite_file, query):
     conn.close()
     return items
 
+def get_user_prefs(config_dir, profile=None):
+    """Get profile preference file in ``config_dir`` directory
+
+    Parameters
+    ----------
+    config_dir : str or pathlib.Path
+        Path to configuration folder, from where the profiles are
+        read. Usually ``~/.zotero``.
+
+    profile : str, optional
+        Name of the profile to be chosen. If None is given, then
+        Default profile is chosen (The default profile is the
+        one which is automatically selected on the zotero startup).
+        Default: None
+    
+    Returns
+    -------
+    pathlib.Path or None
+        Path to the preference file of the selected profile with name ``profile``.
+        If ``profile`` is None, default profile is is chosen.
+        Existence of the Path is not checked, will result in FileNotFoundError
+    
+    Raises
+    ------
+        RuntimeError: If ``profile`` is not None but no corresponding profile exists.
+        RuntimeError: If not profiles are found in the direcotry.
+    """
+
+    config_dir = Path(config_dir) / "zotero"
+    parser = configparser.ConfigParser()
+    parser.read(str(config_dir / "profiles.ini"))
+    config = {s:dict(parser.items(s)) for s in parser.sections()}
+    profiles = {k : v for k,v in config.items() if "path" in v.keys()}
+    if len(profiles) <= 0:
+        raise RuntimeError(f"No profiles fund in {str(config_dir)}.")
+    
+    if not profile is None:
+        for k in profiles.keys():
+            if "name" in profiles[k] and profiles[k]["name"] == profile:
+                return config_dir / profiles[k]["path"] / "prefs.js"
+        raise RuntimeError(f"No profile with name {profile}")
+            
+    # if no name is given or name not found fall back to default
+    for k in profiles.keys():
+        if "default" in profiles[k] and profiles[k]["default"] == '1':
+            return config_dir / profiles[k]["path"] / "prefs.js"
+
+    # if no default is found, fall back to first elemnt
+    first_key = list(profiles.keys())[0]
+    return config_dir / profiles[first_key]["path"] / "prefs.js"
+
+def get_path_pref(pref_path, preference):
+    """Reads data directory from preference file
+
+    Parameters
+    ----------
+    pref_path : str or pathlib.Path
+        File containing user preferences. This file is assumed
+        to exist. Raises FileNotFoundError otherwise.
+    
+    preference : str
+        The preference setting, e.g. ``extensions.zotero.dataDir``
+        
+    Returns
+    -------
+    pathlib.Path or None
+        Path to the data directory or None if setting is not present.
+    """
+    pref_path = Path(pref_path)
+    data_path = None
+    for line in pref_path.read_text(encoding="utf-8").splitlines():
+        if preference in line:
+            # each line in pref_path is a function call with two arguemnts
+            # of which we extrac the second.
+            data_path = re.search(r',.*\"(.*)\"', line)[1]
+            data_path = Path(data_path)
+    
+    return data_path
 
 def open_file(app, file_path, only_return_command=False):
     """Attempt to open ``file_path`` using ``app``.
@@ -290,14 +370,10 @@ def parse_args():
 
     parser.add_argument('-v', '--version', action='version',
                         version=f"%(prog)s {__version__}")
-    parser.add_argument('-p', '--zotero-path', type=Path,
-                        default=DEFAULT_ZOTERO_PATH,
-                        help=(f'Path to Zotero data directory. '
-                              f'Default: "{DEFAULT_ZOTERO_PATH}"'))
-    parser.add_argument('-b', '--zotero-base-dir', type=Path,
-                        default=DEFAULT_ZOTERO_BASE_DIR,
-                        help=(f'Base directory for relative paths in Zotero. '
-                              f'Default: "{DEFAULT_ZOTERO_BASE_DIR}"'))
+    parser.add_argument('-p', '--zotero-profile', type=str,
+                        default=None,
+                        help=(f'Profile name of profile to be chosen.'
+                              f'None to choose default zotero profile.'))
     parser.add_argument('-l', '--list', action='store_true', default=False,
                         help=('Print out list of results instead of passing '
                               'it to Rofi'))
@@ -321,23 +397,24 @@ def parse_args():
                         help=(f'Prompt title when searching through '
                               f'attachments. '
                               f'Default: "{DEFAULT_PROMPT_ATTACHMENT}"'))
+    parser.add_argument('-c', '--zotero-config', type=Path,
+                        default=DEFAULT_ZOTERO_CONFIG,
+                        help=(f'Path to Zotero config directory. '
+                              f'Default: "{DEFAULT_ZOTERO_CONFIG}"'))
 
     return parser.parse_args()
 
 
-def main(zotero_path=None, zotero_base_dir=None,
-         list=False, viewer="xdg-open %u", rofi_args="-i",
+def main(zotero_config=None, zotero_profile=None, list=False, viewer="xdg-open %u", rofi_args="-i",
          prompt_paper="paper", prompt_attachment="attachment"):
     """Run main program.
 
     Parameters
     ----------
-    zotero_path : str or pathlib.Path, optional
-        Path to Zotero data directory. Default: "$HOME/Zotero"
-    zotero_base_dir : str or pathlib.Path, optional
-        Base directory for relative paths stored in Zotero (see Preferences ->
-        Advanced -> Files and Folders -> Base directory in Zotero).
-        Default: "$HOME/papers"
+    zotero_config : str or pathlib.Path, optional
+        Path to Zotero config directory. Default: DEFAULT_ZOTERO_CONFIG
+    zotero_profile : str or pathlib.Path, optional
+        Profile name, None results in default profile. Default None.
     list : bool, optional
         Set to True to print out list of results instead of passing it to Rofi.
         Default: False.
@@ -353,15 +430,10 @@ def main(zotero_path=None, zotero_base_dir=None,
         Default: "attachment"
 
     """
-    if zotero_path is None:
-        zotero_path = Path.home() / "Zotero"
 
-    if zotero_base_dir is None:
-        zotero_base_dir = Path.home() / "papers"
+    zotero_config = Path(zotero_config)
 
     rofi_args = shlex.split(rofi_args)
-    zotero_path = Path(zotero_path)
-    zotero_base_dir = Path(zotero_base_dir)
 
     # Check if Rofi is in PATH early on, as it is also used to show error
     # messages
@@ -373,17 +445,47 @@ def main(zotero_path=None, zotero_base_dir=None,
               file=sys.stderr)
         return
 
+    # compute zotero paths
+    if zotero_config is None:
+        zotero_config = DEFAULT_ZOTERO_CONFIG
+    if not zotero_config.exists():
+        show_error(f"Zotero config directory not found {str(zotero_config)}\n"
+                   f"Use the -c option to specify the path to the config directory.")
+        return
+    try:
+        pref_path = get_user_prefs(zotero_config, zotero_profile)
+    except RuntimeError as e:
+        show_error(f"{str(e)}\n"
+                   f"Use the -p option to specify the zotero profile.")
+        return
+    except FileNotFoundError as e:
+        show_error(f"{str(e)}\n"
+                   f"Use the -c option to specify the path to the conifg directory.")
+        return
+
+    # extract zotero paths
+    if not pref_path.exists() or not pref_path.is_file():
+        show_error(f"Could the find preference file {str(pref_path)}.\n"
+                   f"Use the -c option to specify the path to the config directory.\n")
+        return
+
+    zotero_path = get_path_pref(pref_path, "extensions.zotero.dataDir")
+    zotero_base_dir = get_path_pref(pref_path, "extensions.zotero.baseAttachmentPath")
+
+    if zotero_path is None:
+        zotero_path = DEFAULT_ZOTERO_PATH
+    if zotero_base_dir is None:
+        zotero_base_dir = DEFAULT_ZOTERO_BASE_DIR
+        
     if not zotero_path.exists():
         show_error(f"Zotero data directory not found: {zotero_path}\n"
-                   f"Use the -p option to specify the path to the data "
-                   f"directory")
+                   f"Use the -p option to specify the zotero profile.")
         return
 
     zotero_sqlite_file = zotero_path / _ZOTERO_SQLITE_FILE
     if not zotero_sqlite_file.exists():
         show_error(f"Zotero database not found: {zotero_sqlite_file}\n"
-                   f"Use the -p option to specify the path to the Zotero data "
-                   f"directory")
+                   f"Use the -p option to specify the zotero profile.")
         return
 
     # Create a temporary copy of the database to avoid issues with locking
@@ -398,16 +500,17 @@ def main(zotero_path=None, zotero_base_dir=None,
 
     os.remove(database_copy)
 
-    id = all_authors[0][0]
     author_list = []
-    authors = {}
-    for author_id, author in all_authors:
-        if author_id != id:
-            authors[id] = format_authors(author_list)
-            author_list = []
-            id = author_id
+    if len(all_authors) > 0:
+        id = all_authors[0][0]
+        authors = {}
+        for author_id, author in all_authors:
+            if author_id != id:
+                authors[id] = format_authors(author_list)
+                author_list = []
+                id = author_id
 
-        author_list.append(author)
+            author_list.append(author)
 
     titles = {}
     keys = {}
