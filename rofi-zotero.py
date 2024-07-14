@@ -19,6 +19,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+from collections import defaultdict
 from pathlib import Path
 
 __version__ = "0.1"
@@ -555,17 +556,13 @@ def main(
 
     os.remove(database_copy)
 
-    authors = {}
-    author_list = []
-    if len(all_authors) > 0:
-        id = all_authors[0][0]
-        for author_id, author in all_authors:
-            if author_id != id:
-                authors[id] = format_authors(author_list)
-                author_list = []
-                id = author_id
+    author_lists = defaultdict(lambda: [])
+    for author_id, author in all_authors:
+        author_lists[author_id].append(author)
 
-            author_list.append(author)
+    authors = {
+        id: format_authors(author_list) for id, author_list in author_lists.items()
+    }
 
     titles = {}
     keys = {}
