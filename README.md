@@ -6,12 +6,14 @@ from [Zotero].
 
 The script requires Python 3.7 or above (and Rofi, obviously).
 
-This repository was created for personal use, and bugs are to be expected.
-Make sure to keep backups of important files.
+This project was initially created for personal use and may contain bugs.
+If you find an issue, please file an [Issue] or open a [Pull request].
 
 
 [Rofi]: https://github.com/davatorium/rofi
 [Zotero]: https://www.zotero.org/
+[Issue]: https://github.com/hanschen/rofi-zotero/issues
+[Pull request]: https://github.com/hanschen/rofi-zotero/pulls
 
 
 Example
