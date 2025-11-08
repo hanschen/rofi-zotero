@@ -62,8 +62,7 @@ _QUERY_AUTHORS = """
 
 _QUERY_TITLES = """
     SELECT parentInfo.itemID,
-           parentItemDataValues.value,
-           attachmentInfo.key
+           parentItemDataValues.value
     FROM   itemAttachments
            INNER JOIN items AS attachmentInfo
                    ON attachmentInfo.itemID = itemAttachments.itemID
@@ -106,6 +105,7 @@ _QUERY_DATES = """
 
 _QUERY_PATHS = """
     SELECT parentInfo.itemID,
+           attachmentInfo.key,
            path
     FROM   itemAttachments
            INNER JOIN items AS attachmentInfo
@@ -380,16 +380,14 @@ def parse_args():
         "--profile",
         type=str,
         default=None,
-        help=(
-            "name of the Zotero profile to use. " "Default: The default Zotero profile"
-        ),
+        help=("name of the Zotero profile to use. Default: The default Zotero profile"),
     )
     parser.add_argument(
         "-l",
         "--list",
         action="store_true",
         default=False,
-        help=("print out list of results instead of passing " "it to Rofi"),
+        help=("print out list of results instead of passing it to Rofi"),
     )
     parser.add_argument(
         "--rofi-args",
@@ -434,9 +432,7 @@ def parse_args():
         "--config",
         type=Path,
         default=DEFAULT_ZOTERO_CONFIG,
-        help=(
-            f"path to Zotero config directory. " f'Default: "{DEFAULT_ZOTERO_CONFIG}"'
-        ),
+        help=(f'path to Zotero config directory. Default: "{DEFAULT_ZOTERO_CONFIG}"'),
     )
 
     return parser.parse_args()
@@ -502,9 +498,7 @@ def main(
     try:
         pref_path = get_user_prefs(config, profile)
     except RuntimeError as e:
-        show_error(
-            f"{str(e)}\n" f"Use the --profile option to specify the Zotero profile."
-        )
+        show_error(f"{str(e)}\nUse the --profile option to specify the Zotero profile.")
         return
     except FileNotFoundError as e:
         show_error(
@@ -564,12 +558,7 @@ def main(
         id: format_authors(author_list) for id, author_list in author_lists.items()
     }
 
-    titles = {}
-    keys = {}
-    for title_id, title, key in all_titles:
-        if title_id not in titles:
-            titles[title_id] = title
-            keys[title_id] = key
+    titles = {title_id: title for title_id, title in all_titles}
 
     years = {}
     for date_id, date in all_dates:
@@ -577,7 +566,7 @@ def main(
             years[date_id] = date.split("-")[0]
 
     paths = {}
-    for path_id, path in all_paths:
+    for path_id, key, path in all_paths:
         if path is None:
             continue
 
@@ -589,7 +578,7 @@ def main(
             path = zotero_base_dir / path
         elif path.startswith("storage:"):
             path = path.replace("storage:", "", 1)
-            path = zotero_path / _ZOTERO_STORAGE_DIR / keys[path_id] / path
+            path = zotero_path / _ZOTERO_STORAGE_DIR / key / path
         else:
             path = Path(path)
 
